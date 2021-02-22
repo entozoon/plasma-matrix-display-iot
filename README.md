@@ -1,4 +1,6 @@
-# Plasma Investments
+# Plasma Display IoT
+
+Same as [this project](https://github.com/entozoon/plasma-matrix-display-mc6205) but with IoT capability.
 
 ## Usage
 
@@ -8,7 +10,7 @@ Save `Conf.h.example` in lib to `Conf.h` and populate.
 
 Please note: The API that I personally use is mine and mine alone - you'll want to roll your own.
 
-However, I can describe what you want it to provide - which is literally the text to display on the screen. i.e. a 16x10 string:
+However, I can describe what you want it to provide - which is literally just the text to display on the screen. i.e. a 16x10 string:
 
     Hello world.....
     Hello world.....

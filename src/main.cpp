@@ -2,6 +2,7 @@
 #include <MS6205.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
+#include <WiFiClientSecureBearSSL.h>
 #include <Conf.h>
 int const shiftRegisterLatchPin = D8;
 int const shiftRegisterClockPin = D5;
@@ -10,120 +11,96 @@ int const displaySetPositionPin = D6;
 int const displaySetCharacterPin = D4;
 int const displayClearPin = D1;
 MS6205 display(shiftRegisterLatchPin, shiftRegisterClockPin, shiftRegisterDataPin, displaySetPositionPin, displaySetCharacterPin, displayClearPin);
-WiFiClient client;
+WiFiClient api;
 void wifiConnect()
 {
+  if (WiFi.status() == WL_CONNECTED)
+    return;
   display.clear();
-  display.write("Connecting WIFI ");
+  display.setCursor(0, 0);
+  display.write("Connecting WIFI");
+  Serial.println("Connecting WIFI");
   WiFi.mode(WIFI_STA);
-  WiFi.hostname("plasma-investments");
-  WiFi.begin(SSID, PASS);
+  WiFi.hostname("plasma-matrix-display-iot");
+  WiFi.begin(wifiSsid, wifiPass);
   while (WiFi.status() != WL_CONNECTED)
   {
     display.write(".");
-    delay(100);
+    delay(500);
   }
 }
-boolean wifiQuery()
+String apiQuery()
 {
-  Serial.print("Requesting URL: ");
-  Serial.print(HOST);
-  Serial.println(ENDPOINT);
-  client.print(String("GET ") + ENDPOINT +
-               " HTTP/1.1\r\n" +
-               "Host: " + HOST + "\r\n" +
-               "Connection: close\r\n\r\n");
-  // Wait a while for response
-  int c = 0;
-  while ((!client.available()) && (c < 400)) // 20 = 12s at 50ms delay, 400 = 40s at 100ms delay (it can take fucking ages for puppeteer)
+  std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
+  // Fingerprint expires on June 2, 2021, needs to be updated well before this date
+  // const uint8_t fingerprint[20] = {0x40, 0xaf, 0x00, 0x6b, 0xec, 0x90, 0x22, 0x41, 0x8e, 0xa3, 0xad, 0xfa, 0x1a, 0xe8, 0x25, 0x41, 0x1d, 0x1a, 0x54, 0xb3};
+  // client->setFingerprint(fingerprint);
+  // Update: no need for fingerprint! Bit insecure, apparently but meh: https://buger.dread.cz/simple-esp8266-https-client-without-verification-of-certificate-fingerprint.html
+  client->setInsecure();
+  HTTPClient https;
+  String payload;
+  Serial.print("[HTTPS] begin...\n");
+  if (https.begin(*client, query))
   {
-    // ringFill(0, 0, 100, 25); // Blue, subtle
-    delay(100);
-    c++;
+    Serial.print("[HTTPS] GET...\n");
+    int httpCode = https.GET();
+    if (httpCode > 0)
+    {
+      Serial.printf("[HTTPS] GET... code: %d\n", httpCode);
+      if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY)
+      {
+        payload = https.getString();
+        // Serial.println(payload);
+      }
+    }
+    else
+    {
+      Serial.printf("[HTTPS] GET... failed, error: %s\n", https.errorToString(httpCode).c_str());
+    }
+    https.end();
+    if (payload)
+    {
+      // Serial.println(payload);
+      return payload;
+    }
   }
-  String result = "";
-  while (client.available())
-  {
-    char ch = static_cast<char>(client.read());
-    // Serial.print(ch);
-    result += ch;
-  }
-  client.stop();
-  // trim out the server nonsense that gets appended to the result
-  String data = result.substring(result.lastIndexOf('\n'));
-  Serial.println(data);
-  // Abort, for a minute then yeah
-  if (data.indexOf("\"success\":true") == -1 || data.indexOf("\"success\":false") != -1 || data.length() < 5)
-  {
-    Serial.println("Aborting");
-    ringFill(255, 0, 0, 25); // Red
-    delay(60000);
-    return false;
-  }
-  // In stock baby!
-  if (data.indexOf("\"inStock\":true") != -1)
-  {
-    return true;
-  }
-  return false;
 }
 void setup()
 {
   Serial.begin(115200);
-  delay(4000);
+  delay(10000);
   wifiConnect(); // Initial, for sake of IP display
-  display.setCursor(0, 0);
+  display.setCursor(0, 5);
   display.write("Connected as ");
-  display.setCursor(0, 1);
+  Serial.print("Connected as ");
+  display.setCursor(0, 6);
   display.write(WiFi.localIP().toString().c_str());
+  Serial.println(WiFi.localIP().toString().c_str());
   delay(2000);
 }
 void loop()
 {
   wifiConnect(); // as necessary
-  wifiClient();
-  if (wifiQuery())
+  String result = apiQuery();
+  if (result)
   {
+    display.clear();
+    char resultChars[result.length() + 1];
+    result.toCharArray(resultChars, result.length());
+    const char *delim = "\r\n";
+    // Returns first token
+    char *line = strtok(resultChars, delim);
+    // Keep printing tokens til no more delims
+    int i = 0;
+    int limit = 10;
+    while (line != NULL && i < limit)
+    {
+      line = strtok(NULL, delim);
+      display.setCursor(0, i);
+      display.write(line);
+      Serial.println(line);
+    }
+    Serial.println("");
   }
-  // display.clear();
-  // //A
-  // // B
-  // //  C
-  // //   D
-  // //    E
-  // //     F
-  // //      G
-  // //       H
-  // //        I
-  // //         J
-  // display.setCursor(0, 0);
-  // display.write("A");
-  // delay(1000);
-  // display.setCursor(1, 1);
-  // display.write("B");
-  // delay(1000);
-  // display.setCursor(2, 2);
-  // display.write("C");
-  // delay(1000);
-  // display.setCursor(3, 3);
-  // display.write("D");
-  // delay(1000);
-  // display.setCursor(4, 4);
-  // display.write("E");
-  // delay(1000);
-  // display.setCursor(5, 5);
-  // display.write("F");
-  // delay(1000);
-  // display.setCursor(6, 6);
-  // display.write("G");
-  // delay(1000);
-  // display.setCursor(7, 7);
-  // display.write("H");
-  // delay(1000);
-  // display.setCursor(8, 8);
-  // display.write("I");
-  // delay(1000);
-  // display.setCursor(9, 9);
-  // display.write("J");
-  // delay(1000);
+  delay(5000);
 }

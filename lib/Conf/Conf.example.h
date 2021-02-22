@@ -1,4 +1,3 @@
-#define SSID "WifiName"
-#define PASS "wifipassword"
-#define HOST "https://example.com"
-#define ENDPOINT "/api/endpoint"
+const char *wifiSsid = "WifiName";
+const char *wifiPass = "wifipassword";
+const char *query = "https://example.com/endpoint";
