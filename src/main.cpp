@@ -18,6 +18,8 @@ void wifiConnect()
     return;
   display.clear();
   display.setCursor(0, 0);
+  display.write("MichaelCook.tech");
+  display.setCursor(0, 3);
   display.write("Connecting WIFI");
   Serial.println("Connecting WIFI");
   WiFi.mode(WIFI_STA);
@@ -68,12 +70,13 @@ String apiQuery()
 void setup()
 {
   Serial.begin(115200);
-  delay(10000);
+  display.clear();
+  delay(4000);
   wifiConnect(); // Initial, for sake of IP display
-  display.setCursor(0, 5);
+  display.setCursor(0, 6);
   display.write("Connected as ");
   Serial.print("Connected as ");
-  display.setCursor(0, 6);
+  display.setCursor(0, 7);
   display.write(WiFi.localIP().toString().c_str());
   Serial.println(WiFi.localIP().toString().c_str());
   delay(2000);
@@ -99,8 +102,10 @@ void loop()
       display.setCursor(0, i);
       display.write(line);
       Serial.println(line);
+      i++;
     }
     Serial.println("");
+    delay(60 * 60 * 1000);
   }
   delay(5000);
 }
