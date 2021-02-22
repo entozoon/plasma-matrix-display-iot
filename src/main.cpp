@@ -15,19 +15,21 @@ WiFiClient api;
 void wifiConnect()
 {
   if (WiFi.status() == WL_CONNECTED)
+  {
+    display.write(F("Already conn"));
     return;
+  }
   display.clear();
-  display.setCursor(0, 0);
-  display.write("MichaelCook.tech");
+  delay(500);
   display.setCursor(0, 3);
-  display.write("Connecting WIFI");
+  display.write(F("Connecting WIFI"));
   Serial.println("Connecting WIFI");
   WiFi.mode(WIFI_STA);
   WiFi.hostname("plasma-matrix-display-iot");
   WiFi.begin(wifiSsid, wifiPass);
   while (WiFi.status() != WL_CONNECTED)
   {
-    display.write(".");
+    display.write(F("."));
     delay(500);
   }
 }
@@ -41,10 +43,10 @@ String apiQuery()
   client->setInsecure();
   HTTPClient https;
   String payload;
-  Serial.print("[HTTPS] begin...\n");
+  Serial.print(F("[HTTPS] begin...\n"));
   if (https.begin(*client, query))
   {
-    Serial.print("[HTTPS] GET...\n");
+    Serial.print(F("[HTTPS] GET...\n"));
     int httpCode = https.GET();
     if (httpCode > 0)
     {
@@ -69,17 +71,15 @@ String apiQuery()
 }
 void setup()
 {
-  Serial.begin(115200);
-  display.clear();
-  delay(4000);
-  wifiConnect(); // Initial, for sake of IP display
-  display.setCursor(0, 6);
-  display.write("Connected as ");
-  Serial.print("Connected as ");
-  display.setCursor(0, 7);
-  display.write(WiFi.localIP().toString().c_str());
-  Serial.println(WiFi.localIP().toString().c_str());
   delay(2000);
+  Serial.begin(115200);
+  delay(2000);
+  display.clear();
+  delay(2000);
+  display.setCursor(0, 0);
+  display.write(F("MichaelCook.tech"));
+  Serial.print(F("Connected as "));
+  Serial.println(WiFi.localIP().toString().c_str());
 }
 void loop()
 {
@@ -105,7 +105,7 @@ void loop()
       i++;
     }
     Serial.println("");
-    delay(60 * 60 * 1000);
+    delay(10 * 60 * 1000); // 10mins after success
   }
-  delay(5000);
+  delay(10000);
 }
