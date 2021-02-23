@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <MS6205.h>
+#include <MS6205.h> // https://github.com/holzachr/MS6205-arduino-library
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
@@ -16,12 +16,12 @@ void wifiConnect()
 {
   if (WiFi.status() == WL_CONNECTED)
   {
-    display.write(F("Already conn"));
+    Serial.println(F("Already connected"));
     return;
   }
   display.clear();
   delay(500);
-  display.setCursor(0, 3);
+  display.setCursor(0, 6);
   display.write(F("Connecting WIFI"));
   Serial.println("Connecting WIFI");
   WiFi.mode(WIFI_STA);
@@ -69,6 +69,12 @@ String apiQuery()
     }
   }
 }
+void hideCursor()
+{
+  // Glitching it offscreen, shouldn't work but yeah.
+  // Only really had to do this because I forgot to solder 8A to GND to hide it permanently
+  display.setCursor(18, 10);
+}
 void setup()
 {
   delay(2000);
@@ -76,8 +82,9 @@ void setup()
   delay(2000);
   display.clear();
   delay(2000);
-  display.setCursor(0, 0);
+  display.setCursor(0, 4);
   display.write(F("MichaelCook.tech"));
+  hideCursor();
   Serial.print(F("Connected as "));
   Serial.println(WiFi.localIP().toString().c_str());
 }
@@ -98,13 +105,14 @@ void loop()
     int limit = 10;
     while (line != NULL && i < limit)
     {
-      line = strtok(NULL, delim);
       display.setCursor(0, i);
       display.write(line);
       Serial.println(line);
+      line = strtok(NULL, delim);
       i++;
     }
     Serial.println("");
+    hideCursor();
     delay(10 * 60 * 1000); // 10mins after success
   }
   delay(10000);
